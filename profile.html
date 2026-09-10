@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户中心 - 雅思词汇连连看</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f0f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #6b46c1;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .nav a {
+            padding: 10px 20px;
+            margin: 0 10px;
+            background-color: #9f7aea;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .nav a:hover {
+            background-color: #805ad5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        .profile-container {
+            width: 600px;
+            background-color: #f7f3ff;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e9d8fd;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+        }
+        
+        .section h2 {
+            color: #6b46c1;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e9d8fd;
+            padding-bottom: 5px;
+        }
+        
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #d6bcfa;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #6b46c1;
+        }
+        
+        .info-value {
+            color: #4a5568;
+        }
+        
+        .progress-container {
+            margin-top: 10px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9d8fd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #9f7aea;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-weight: bold;
+            color: #6b46c1;
+        }
+        
+        .stats-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #d6bcfa;
+            padding: 15px;
+        }
+        
+        .stat-card h3 {
+            color: #6b46c1;
+            margin-bottom: 10px;
+        }
+        
+        .letter-progress {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .letter-stat {
+            flex: 1 1 80px;
+            padding: 10px;
+            background-color: #f7f3ff;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #d6bcfa;
+        }
+        
+        .letter-stat .letter {
+            font-weight: bold;
+            color: #6b46c1;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .letter-stat .percentage {
+            font-size: 14px;
+            color: #4a5568;
+        }
+        
+        .letter-stat .bar {
+            width: 100%;
+            height: 6px;
+            background-color: #e9d8fd;
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .letter-stat .bar-fill {
+            height: 100%;
+            background-color: #9f7aea;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .users-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .user-card {
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #d6bcfa;
+            flex: 1 1 150px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .user-name {
+            font-weight: bold;
+            color: #6b46c1;
+            margin-bottom: 5px;
+        }
+        
+        .user-level {
+            font-size: 14px;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+        
+        .clear-btn {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #f56565;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .clear-btn:hover {
+            background-color: #e53e3e;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 650px) {
+            .profile-container {
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>用户中心</h1>
+    
+    <div class="nav">
+        <a href="index.html">游戏</a>
+        <a href="profile.html">我的</a>
+    </div>
+    
+    <div class="profile-container">
+        <div class="section">
+            <h2>个人信息</h2>
+            <div class="user-info" id="user-info">
+                <!-- 个人信息将通过JavaScript动态生成 -->
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>学习统计</h2>
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>总体进度</h3>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">0/8000个词</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>分首字母进度</h3>
+                    <div class="letter-progress" id="letter-progress">
+                        <!-- 分首字母进度将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>所有用户</h2>
+            <div class="users-list" id="users-list">
+                <!-- 用户列表将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+    
+    <script src="data/ielts_words.js?v=3"></script>
+    <script>
+        // 加载用户数据
+        function loadUserData() {
+            const usersJson = localStorage.getItem('ieltsGameUsers');
+            return usersJson ? JSON.parse(usersJson) : [];
+        }
+        
+        // 获取当前用户
+        function getCurrentUser() {
+            const currentUserName = localStorage.getItem('currentUser');
+            if (!currentUserName) {
+                return null;
+            }
+            
+            const users = loadUserData();
+            return users.find(user => user.name === currentUserName);
+        }
+        
+        // 显示个人信息
+        function displayUserInfo() {
+            const user = getCurrentUser();
+            const userInfoContainer = document.getElementById('user-info');
+            
+            if (!user) {
+                userInfoContainer.innerHTML = '<div class="info-item"><span class="info-label">提示</span><span class="info-value">请先玩一次游戏以创建用户档案</span></div>';
+                return;
+            }
+            
+            userInfoContainer.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">用户名</span>
+                    <span class="info-value">${user.name}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">已掌握词汇</span>
+                    <span class="info-value">${user.totalMatchedWords}个</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">已完成关卡</span>
+                    <span class="info-value">${user.levelsCompleted}关</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">游戏次数</span>
+                    <span class="info-value">${user.gameHistory.length}次</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">操作</span>
+                    <button class="clear-btn" onclick="clearUserData('${user.name}')">清除数据</button>
+                </div>
+            `;
+        }
+        
+        // 加载词汇库总词数
+        async function getTotalWords() {
+            // 优先使用 <script> 方式加载的词表（file:// 双击打开也可用）
+            if (window.IELTS_WORDS && Array.isArray(window.IELTS_WORDS.words)) {
+                return window.IELTS_WORDS.words.length;
+            }
+            try {
+                const response = await fetch('data/ielts_words.json');
+                const data = await response.json();
+                return data.words.length;
+            } catch (error) {
+                console.error('Error loading words:', error);
+                return 0;
+            }
+        }
+        
+        // 显示词汇掌握进度
+        async function displayProgress() {
+            const user = getCurrentUser();
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            
+            if (!user) {
+                progressFill.style.width = '0%';
+                progressText.textContent = '0/0个词';
+                return;
+            }
+            
+            const totalWords = await getTotalWords();
+            const masteredWords = user.totalMatchedWords;
+            const percentage = Math.min((masteredWords / totalWords) * 100, 100);
+            
+            progressFill.style.width = `${percentage}%`;
+            progressText.textContent = `${masteredWords}/${totalWords}个词 (${Math.round(percentage)}%)`;
+        }
+        
+        // 显示分首字母进度
+        async function displayLetterProgress() {
+            const user = getCurrentUser();
+            const letterProgressContainer = document.getElementById('letter-progress');
+            
+            if (!user) {
+                letterProgressContainer.innerHTML = '<div class="letter-stat">暂无数据</div>';
+                return;
+            }
+            
+            const totalWords = await getTotalWords();
+            
+            // 按首字母分组统计
+            const letterStats = {};
+            
+            // 初始化26个字母的统计
+            for (let i = 65; i <= 90; i++) {
+                const letter = String.fromCharCode(i);
+                letterStats[letter] = 0;
+            }
+            
+            // 统计已掌握的词汇
+            user.masteredWords.forEach(word => {
+                const firstLetter = word.charAt(0).toUpperCase();
+                if (letterStats.hasOwnProperty(firstLetter)) {
+                    letterStats[firstLetter]++;
+                }
+            });
+            
+            // 生成HTML
+            let letterHTML = '';
+            for (let i = 65; i <= 90; i++) {
+                const letter = String.fromCharCode(i);
+                const count = letterStats[letter];
+                const percentage = Math.min((count / (totalWords / 26)) * 100, 100);
+                
+                letterHTML += `
+                    <div class="letter-stat">
+                        <div class="letter">${letter}</div>
+                        <div class="percentage">${count}个</div>
+                        <div class="bar">
+                            <div class="bar-fill" style="width: ${percentage}%;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            letterProgressContainer.innerHTML = letterHTML;
+        }
+        
+        // 显示所有用户
+        function displayUsersList() {
+            const users = loadUserData();
+            const usersListContainer = document.getElementById('users-list');
+            
+            if (users.length === 0) {
+                usersListContainer.innerHTML = '<div class="user-card">暂无用户</div>';
+                return;
+            }
+            
+            let usersHTML = '';
+            users.forEach(user => {
+                usersHTML += `
+                    <div class="user-card">
+                        <div class="user-name">${user.name}</div>
+                        <div class="user-level">关卡：${user.levelsCompleted}</div>
+                        <div class="user-level">词汇：${user.totalMatchedWords}个</div>
+                        <button class="clear-btn" onclick="clearUserData('${user.name}')">清除数据</button>
+                    </div>
+                `;
+            });
+            
+            usersListContainer.innerHTML = usersHTML;
+        }
+        
+        // 清除用户数据
+        function clearUserData(userName) {
+            if (confirm(`确定要清除${userName}的所有数据吗？此操作不可恢复。`)) {
+                let users = loadUserData();
+                users = users.filter(user => user.name !== userName);
+                localStorage.setItem('ieltsGameUsers', JSON.stringify(users));
+                
+                // 如果清除的是当前用户，清除当前用户标记
+                if (localStorage.getItem('currentUser') === userName) {
+                    localStorage.removeItem('currentUser');
+                }
+                
+                // 重新刷新页面
+                window.location.reload();
+            }
+        }
+        
+        // 初始化页面
+        async function init() {
+            displayUserInfo();
+            await displayProgress();
+            await displayLetterProgress();
+            displayUsersList();
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

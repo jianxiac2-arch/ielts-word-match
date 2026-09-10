@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雅思词汇连连看</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f0f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            overscroll-behavior-y: none;
+        }
+        
+        h1 {
+            color: #6b46c1;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .nav a {
+            padding: 10px 20px;
+            margin: 0 10px;
+            background-color: #9f7aea;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .nav a:hover {
+            background-color: #805ad5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        .page {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .score {
+            padding: 10px 20px;
+            background-color: #f7f3ff;
+            border-radius: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #6b46c1;
+            border: 2px solid #e9d8fd;
+        }
+        
+        .time-container {
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+        
+        .time-circle {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        
+        .time-circle-bg {
+            fill: none;
+            stroke: #e9d8fd;
+            stroke-width: 8;
+        }
+        
+        .time-circle-progress {
+            fill: none;
+            stroke: #9f7aea;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear;
+        }
+        
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            width: 100%;
+            min-height: 450px;
+            max-height: 70vh;
+            background-color: #f7f3ff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            position: relative;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain;
+            border: 2px solid #e9d8fd;
+            align-content: start;
+        }
+        
+        .card {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+        }
+        
+        .card-content {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 8px;
+            background-color: white;
+            border: 2px solid #d6bcfa;
+            transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #2d3748;
+            text-align: center;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+        
+        .card.selected .card-content {
+            background-color: #6b46c1 !important;
+            color: #fefcbf;
+            border-color: #fbbf24 !important;
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.55), 0 6px 14px rgba(107, 70, 193, 0.35);
+            transform: translateY(-2px);
+            font-weight: bold;
+        }
+        
+        .card.matched .card-content {
+            background-color: #edf2f7 !important;
+            color: #6b46c1;
+            border-color: #cbd5e0 !important;
+            opacity: 0.55;
+            cursor: default;
+            transform: none;
+            font-weight: bold;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card.matched .card-content::after {
+            content: '✓';
+            position: absolute;
+            top: 3px;
+            right: 5px;
+            font-size: 14px;
+            color: #38a169;
+            font-weight: bold;
+            opacity: 0.95;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .start-btn {
+            background-color: #9f7aea;
+            color: white;
+        }
+        
+        .start-btn:hover {
+            background-color: #805ad5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        .reset-btn {
+            background-color: #f56565;
+            color: white;
+        }
+        
+        .reset-btn:hover {
+            background-color: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        .next-btn {
+            background-color: #4299e1;
+            color: white;
+        }
+        
+        .next-btn:hover {
+            background-color: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        .continue-btn {
+            background-color: #48bb78;
+            color: white;
+        }
+        
+        .continue-btn:hover {
+            background-color: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        .back-btn {
+            background-color: #718096;
+            color: white;
+        }
+        
+        .back-btn:hover {
+            background-color: #4a5568;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        .message {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #6b46c1;
+            text-align: center;
+            background-color: #f7f3ff;
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 2px solid #e9d8fd;
+        }
+        
+        /* 字母选择界面样式 */
+        .letter-selection {
+            width: 100%;
+            background-color: #f7f3ff;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 2px solid #e9d8fd;
+        }
+        
+        .letter-selection h2 {
+            color: #6b46c1;
+            margin-bottom: 15px;
+        }
+        
+        .letters {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .letter {
+            width: 45px;
+            height: 45px;
+            background-color: #f7f3ff;
+            border: 2px solid #d6bcfa;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #6b46c1;
+        }
+        
+        .letter:hover {
+            background-color: #9f7aea;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .letter.selected {
+            background-color: #9f7aea;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .selection-info {
+            font-size: 14px;
+            color: #6b46c1;
+            margin-top: 10px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 650px) {
+            body {
+                padding: 12px;
+            }
+            .game-container {
+                grid-template-columns: repeat(5, 1fr);
+                min-height: auto;
+                max-height: 60vh;
+                padding: 12px;
+                gap: 8px;
+            }
+            
+            .card-content {
+                font-size: 12px;
+                font-weight: bold;
+            }
+
+            button {
+                padding: 10px 18px;
+                font-size: 14px;
+                margin: 0 6px;
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+
+        /* 用户建档遮罩 */
+        .user-gate {
+            position: fixed;
+            inset: 0;
+            background: rgba(107, 70, 193, 0.25);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .user-gate.active {
+            display: flex;
+        }
+
+        .gate-card {
+            background-color: white;
+            border: 2px solid #e9d8fd;
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 12px 32px rgba(107, 70, 193, 0.25);
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .gate-card h2 {
+            color: #6b46c1;
+            margin-bottom: 10px;
+        }
+
+        .gate-subtitle {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .existing-users {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .existing-user-chip {
+            padding: 6px 16px;
+            background-color: #f7f3ff;
+            border: 2px solid #d6bcfa;
+            color: #6b46c1;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .existing-user-chip:hover {
+            background-color: #9f7aea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .gate-input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .gate-input-row input {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 16px;
+            border: 2px solid #d6bcfa;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .gate-input-row input:focus {
+            border-color: #9f7aea;
+        }
+
+        .gate-input-row button {
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .gate-error {
+            color: #e53e3e;
+            font-size: 13px;
+            min-height: 18px;
+            margin-top: 10px;
+        }
+
+        .current-user-bar {
+            text-align: center;
+            font-size: 13px;
+            color: #6b46c1;
+            margin-top: 12px;
+        }
+
+        .current-user-bar .switch-user {
+            color: #805ad5;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-left: 6px;
+        }
+    </style>
+</head>
+<body>
+    <h1>雅思词汇连连看</h1>
+    
+    <div class="nav">
+        <a href="index.html">游戏</a>
+        <a href="profile.html">我的</a>
+    </div>
+    
+    <!-- 字母选择页面 -->
+    <div class="page active" id="letter-selection-page">
+        <div class="letter-selection">
+            <h2>选择字母</h2>
+            <div class="letters" id="letters">
+                <!-- 字母将通过JavaScript动态生成 -->
+            </div>
+            <div class="selection-info">
+                选择一个字母进行针对性练习，或直接开始游戏使用随机单词
+            </div>
+            <div class="current-user-bar" id="current-user-bar"></div>
+        </div>
+        <div class="controls">
+            <button class="start-btn" id="start-game-btn">开始游戏</button>
+        </div>
+    </div>
+    
+    <!-- 游戏页面 -->
+    <div class="page" id="game-page">
+        <div class="game-info">
+            <div class="score">得分: <span id="score">0</span></div>
+            <div class="time-container">
+                <svg class="time-circle" viewBox="0 0 100 100">
+                    <circle class="time-circle-bg" cx="50" cy="50" r="40"></circle>
+                    <circle class="time-circle-progress" id="time-progress" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="0"></circle>
+                </svg>
+            </div>
+        </div>
+        
+        <div class="game-container" id="game-container">
+            <!-- 卡片将通过JavaScript动态生成 -->
+        </div>
+        
+        <div class="controls">
+            <button class="back-btn" id="back-btn">重新选择字母</button>
+            <button class="reset-btn" id="reset-btn">重新开始</button>
+            <button class="next-btn" id="next-btn" style="display: none;">下一关卡</button>
+        </div>
+        
+        <div class="message" id="message"></div>
+    </div>
+    
+    <!-- 用户建档遮罩 -->
+    <div class="user-gate" id="user-gate">
+        <div class="gate-card">
+            <h2>雅思词汇连连看</h2>
+            <p class="gate-subtitle" id="gate-subtitle">输入你的名字，创建学习档案</p>
+            <div class="existing-users" id="existing-users"></div>
+            <div class="gate-input-row">
+                <input type="text" id="user-name-input" maxlength="12" placeholder="输入名字（最多12个字）" autocomplete="off">
+                <button class="start-btn" id="user-name-confirm">开始</button>
+            </div>
+            <div class="gate-error" id="gate-error"></div>
+        </div>
+    </div>
+
+    <script src="data/ielts_words.js?v=6"></script>
+    <script src="src/game.js?v=6"></script>
+</body>
+</html>
