@@ -115,22 +115,23 @@
         }
         
         .game-container {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 12px;
+            display: block;
             width: 100%;
-            min-height: 450px;
+            height: 450px;
             max-height: 70vh;
             background-color: #f7f3ff;
-            padding: 20px;
+            padding: 0;
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             position: relative;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior-y: contain;
+            overflow: hidden;
             border: 2px solid #e9d8fd;
-            align-content: start;
+        }
+
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
         
         .card {
@@ -522,7 +523,7 @@
         </div>
         
         <div class="game-container" id="game-container">
-            <!-- 卡片将通过JavaScript动态生成 -->
+            <canvas id="game-canvas"></canvas>
         </div>
         
         <div class="controls">
@@ -548,7 +549,9 @@
         </div>
     </div>
 
-    <script src="data/ielts_words.js?v=6"></script>
-    <script src="src/game.js?v=6"></script>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="data/ielts_words.js?v=7"></script>
+    <script src="src/scene3d.js?v=7"></script>
+    <script src="src/game.js?v=7"></script>
 </body>
 </html>

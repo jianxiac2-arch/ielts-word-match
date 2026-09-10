@@ -30,6 +30,16 @@ class IELTSGame {
             { columns: 4, rows: 8 } // 4x8布局，适应不同屏幕
         ];
         this.currentLayout = 0;
+
+        // 初始化 3D 场景
+        if (window.Scene3D) {
+            this.scene3d = new window.Scene3D('game-canvas');
+            this.scene3d.onPairClick = (m1, m2) => this.handlePairFrom3D(m1, m2);
+        } else {
+            console.warn('Scene3D 未加载，3D 模式不可用');
+        }
+
+        window.game = this; // 调试用
         
         this.init();
     }
@@ -365,97 +375,49 @@ class IELTSGame {
     }
     
     generateCards() {
-        const container = document.getElementById('game-container');
-        container.innerHTML = '';
-        
-        // 应用随机布局
-        const layout = this.gridLayouts[this.currentLayout];
-        container.style.gridTemplateColumns = `repeat(${layout.columns}, 1fr)`;
-        
-        // 生成词汇和释义对
-        const cardPairs = [];
-        this.currentWords.forEach(wordObj => {
-            cardPairs.push({ content: wordObj.word, type: 'word', pairId: wordObj.word });
-            cardPairs.push({ content: wordObj.meaning, type: 'meaning', pairId: wordObj.word });
-        });
-        
-        // 打乱卡片顺序
-        this.shuffleArray(cardPairs);
-        
-        // 创建卡片元素
-        cardPairs.forEach((card, index) => {
-            const cardElement = document.createElement('div');
-            cardElement.className = 'card';
-            cardElement.dataset.pairId = card.pairId;
-            cardElement.dataset.type = card.type;
-            
-            // 使用当前轮次的统一卡片颜色
-            const cardStyle = this.currentCardColor;
-            
-            cardElement.innerHTML = `
-                <div class="card-inner">
-                    <div class="card-content" style="background-color: ${cardStyle.backgroundColor}; border-color: ${cardStyle.borderColor};">
-                        ${card.content}
-                    </div>
-                </div>
-            `;
-            
-            cardElement.addEventListener('click', () => this.selectCard(cardElement));
-            container.appendChild(cardElement);
-        });
+        if (!this.scene3d) return;
+
+        // 生成词汇对数组 [{ word, meaning }, ...]
+        const pairs = this.currentWords.map(w => ({
+            word: w.word,
+            meaning: w.meaning
+        }));
+
+        this.scene3d.buildCards(pairs);
+        this.selectedCards = [];
     }
-    
-    selectCard(card) {
+
+    /** Scene3D 回调：用户点了两张卡 */
+    handlePairFrom3D(mesh1, mesh2) {
         if (!this.gameStarted) return;
-        if (card.classList.contains('selected')) return;
-        if (card.classList.contains('matched')) return;
-        if (this.selectedCards.length >= 2) return;
-        
-        // 添加选中特效
-        card.classList.add('selected');
-        this.selectedCards.push(card);
-        
-        if (this.selectedCards.length === 2) {
-            setTimeout(() => this.checkMatch(), 500);
-        }
-    }
-    
-    checkMatch() {
-        const [card1, card2] = this.selectedCards;
-        const pairId1 = card1.dataset.pairId;
-        const pairId2 = card2.dataset.pairId;
-        const type1 = card1.dataset.type;
-        const type2 = card2.dataset.type;
-        
+
+        const pairId1 = mesh1.userData.pairId;
+        const pairId2 = mesh2.userData.pairId;
+        const type1 = mesh1.userData.type;
+        const type2 = mesh2.userData.type;
+
         if (pairId1 === pairId2 && type1 !== type2) {
             // 匹配成功
             this.score += 10;
             this.matchedPairs++;
             this.updateScore();
-            
-            // 标记为匹配
-            card1.classList.remove('selected');
-            card2.classList.remove('selected');
-            card1.classList.add('matched');
-            card2.classList.add('matched');
-            
-            // 记录已掌握的词汇
+
+            // 触发 3D 生长动画
+            this.scene3d.pairSuccess(pairId1);
+
+            // 记录已掌握
             if (!this.currentUser.masteredWords.includes(pairId1)) {
                 this.currentUser.masteredWords.push(pairId1);
             }
-            
-            // 检查游戏是否结束
-            const remainingCards = document.querySelectorAll('.card:not(.matched)');
-            if (remainingCards.length === 0) {
+
+            // 通关检测
+            if (this.matchedPairs >= this.currentWords.length) {
                 this.endGame(true);
             }
         } else {
-            // 匹配失败，移除选中状态
-            card1.classList.remove('selected');
-            card2.classList.remove('selected');
+            // 匹配失败：重置选中卡的状态
+            this.scene3d.pairFail();
         }
-        
-        this.selectedCards = [];
     }
     
     startTimer() {
