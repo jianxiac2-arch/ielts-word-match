@@ -30,7 +30,13 @@ class IELTSGame {
             { columns: 4, rows: 8 } // 4x8布局，适应不同屏幕
         ];
         this.currentLayout = 0;
-        
+
+        // v7d：分层 3D 模式开关（?view=3d 启用，默认走 2D）；&pairs=N 限制对数（验证用）
+        const params = new URLSearchParams(window.location.search);
+        this.view3d = params.get('view') === '3d';
+        this.debugPairs = parseInt(params.get('pairs'), 10) || 0;
+        this.scene3d = null;
+
         this.init();
     }
     
@@ -362,9 +368,31 @@ class IELTSGame {
         }
         
         this.currentWords = selectedWords;
+
+        // v7d 验证模式：限制每局对数（?pairs=3）
+        if (this.view3d && this.debugPairs > 0) {
+            this.currentWords = this.currentWords.slice(0, this.debugPairs);
+        }
     }
-    
+
     generateCards() {
+        // v7d：3D 分层渲染分流，2D 路径完全保留
+        if (this.view3d && window.Scene3DLayered) {
+            try {
+                // 懒初始化：等 game-page 显示后容器才有尺寸
+                if (!this.scene3d) {
+                    this.scene3d = new window.Scene3DLayered('game-container');
+                    this.scene3d.onPairClick = (a, b) => this.handlePairFrom3D(a, b);
+                }
+                this.scene3d.buildCards(this.currentWords.map(w => ({ word: w.word, meaning: w.meaning })));
+                return;
+            } catch (err) {
+                // WebGL 不可用等情况：提示并留在 2D，不让游戏崩溃
+                console.warn('3D 渲染初始化失败，降级到 2D：', err);
+                this.view3d = false;
+                document.getElementById('message').textContent = '当前设备不支持 3D 渲染，已自动切换为经典模式';
+            }
+        }
         const container = document.getElementById('game-container');
         container.innerHTML = '';
         
@@ -405,6 +433,28 @@ class IELTSGame {
         });
     }
     
+    /** v7d：3D 场景的配对回调（2D 的 checkMatch 不受影响）*/
+    handlePairFrom3D(g1, g2) {
+        if (!this.gameStarted) return;
+        const u1 = g1.userData, u2 = g2.userData;
+        if (u1.pairId === u2.pairId && u1.type !== u2.type) {
+            this.score += 10;
+            this.matchedPairs++;
+            this.updateScore();
+            this.scene3d.pairSuccess(u1.pairId);
+
+            const wordText = this.currentWords[u1.pairId] && this.currentWords[u1.pairId].word;
+            if (wordText && this.currentUser && !this.currentUser.masteredWords.includes(wordText)) {
+                this.currentUser.masteredWords.push(wordText);
+            }
+            if (this.matchedPairs >= this.currentWords.length) {
+                setTimeout(() => this.endGame(true), 900);
+            }
+        } else {
+            this.scene3d.pairFail();
+        }
+    }
+
     selectCard(card) {
         if (!this.gameStarted) return;
         if (card.classList.contains('selected')) return;
@@ -572,5 +622,5 @@ class IELTSGame {
 
 // 初始化游戏
 window.addEventListener('DOMContentLoaded', () => {
-    new IELTSGame();
+    window.game = new IELTSGame();
 });
