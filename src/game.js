@@ -82,6 +82,11 @@ class IELTSGame {
         // 重置选中的字母
         document.querySelectorAll('.letter').forEach(el => el.classList.remove('selected'));
         this.selectedLetter = null;
+
+        // 刷新字母掌握率（本局可能新掌握了词）
+        this.updateLetterMastery();
+        const infoEl = document.getElementById('letter-mastery-info');
+        if (infoEl) infoEl.textContent = '';
         
         document.getElementById('message').textContent = '';
     }
@@ -93,7 +98,8 @@ class IELTSGame {
         letters.split('').forEach(letter => {
             const letterElement = document.createElement('div');
             letterElement.className = 'letter';
-            letterElement.textContent = letter;
+            letterElement.dataset.letter = letter;
+            letterElement.innerHTML = `<span class="letter-fill"></span><span class="letter-text">${letter}</span>`;
             
             letterElement.addEventListener('click', () => {
                 // 移除其他字母的选中状态
@@ -102,10 +108,53 @@ class IELTSGame {
                 letterElement.classList.add('selected');
                 // 保存选中的字母
                 this.selectedLetter = letter.toLowerCase();
+                this.updateLetterMasteryInfo(letter.toLowerCase());
             });
             
             lettersContainer.appendChild(letterElement);
         });
+
+        this.updateLetterMastery();
+    }
+
+    // 刷新所有字母的掌握率填充
+    updateLetterMastery() {
+        if (!this.currentUser) return;
+        const mastered = this.currentUser.masteredWords || [];
+        const letterCount = {};
+        const totalCount = {};
+        // 统计词库中各字母总词数
+        this.words.forEach(w => {
+            const L = (w.word[0] || '').toUpperCase();
+            totalCount[L] = (totalCount[L] || 0) + 1;
+        });
+        // 统计已掌握的各字母词数
+        mastered.forEach(w => {
+            const L = (w[0] || '').toUpperCase();
+            letterCount[L] = (letterCount[L] || 0) + 1;
+        });
+
+        document.querySelectorAll('.letter').forEach(el => {
+            const L = el.dataset.letter;
+            const masteredN = letterCount[L] || 0;
+            const totalN = totalCount[L] || 0;
+            const pct = totalN > 0 ? Math.min((masteredN / totalN) * 100, 100) : 0;
+            const fill = el.querySelector('.letter-fill');
+            if (fill) fill.style.height = pct + '%';
+            // 掌握率超过 50% 时文字变白（在填充上更清晰）
+            el.classList.toggle('mastered-high', pct >= 50);
+        });
+    }
+
+    // 显示选中字母的掌握详情
+    updateLetterMasteryInfo(letter) {
+        const infoEl = document.getElementById('letter-mastery-info');
+        if (!infoEl || !this.currentUser) return;
+        const L = letter.toUpperCase();
+        const mastered = this.currentUser.masteredWords || [];
+        const masteredN = mastered.filter(w => (w[0] || '').toUpperCase() === L).length;
+        const totalN = this.words.filter(w => (w.word[0] || '').toUpperCase() === L).length;
+        infoEl.textContent = `${L}：已掌握 ${masteredN} / ${totalN} 词`;
     }
     
     loadUsers() {
@@ -205,6 +254,7 @@ class IELTSGame {
         this.currentLevel = user.levelsCompleted + 1;
         this.hideUserGate();
         this.updateCurrentUserBar();
+        this.updateLetterMastery();
     }
 
     updateCurrentUserBar() {
@@ -560,8 +610,11 @@ class IELTSGame {
         const percentage = this.time / totalTime;
         const circumference = 2 * Math.PI * 40; // 圆的周长
         const dashoffset = circumference * (1 - percentage);
-        
-        document.getElementById('time-progress').style.strokeDashoffset = dashoffset;
+        const progressEl = document.getElementById('time-progress');
+
+        progressEl.style.strokeDashoffset = dashoffset;
+        // 剩余 30 秒以内变红并脉动，制造紧迫感
+        progressEl.classList.toggle('warning', this.time <= 30);
     }
     
     shuffleArray(array) {

@@ -113,6 +113,16 @@
             stroke-linecap: round;
             transition: stroke-dashoffset 1s linear;
         }
+
+        .time-circle-progress.warning {
+            stroke: #f56565;
+            animation: timer-pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes timer-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
         
         .game-container {
             display: grid;
@@ -178,15 +188,20 @@
         }
         
         .card.matched .card-content {
-            background-color: #edf2f7 !important;
-            color: #6b46c1;
-            border-color: #cbd5e0 !important;
-            opacity: 0.55;
+            background-color: #f0fff4 !important;
+            color: #276749;
+            border-color: #68d391 !important;
             cursor: default;
-            transform: none;
             font-weight: bold;
             position: relative;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            animation: match-pop 0.5s ease-out;
+        }
+
+        @keyframes match-pop {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.12); box-shadow: 0 0 0 4px rgba(104, 211, 145, 0.5); }
+            100% { transform: scale(1); opacity: 0.6; }
         }
 
         .card.matched .card-content::after {
@@ -325,6 +340,28 @@
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             color: #6b46c1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .letter .letter-fill {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #9f7aea;
+            opacity: 0.25;
+            transition: height 0.4s ease;
+            z-index: 0;
+        }
+
+        .letter .letter-text {
+            position: relative;
+            z-index: 1;
+        }
+
+        .letter.mastered-high .letter-text {
+            color: #fff;
         }
         
         .letter:hover {
@@ -333,11 +370,26 @@
             transform: scale(1.1);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
+
+        .letter:hover .letter-text {
+            color: white;
+        }
         
         .letter.selected {
             background-color: #9f7aea;
             color: white;
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .letter.selected .letter-text {
+            color: white;
+        }
+
+        .letter-mastery-info {
+            font-size: 12px;
+            color: #718096;
+            min-height: 18px;
+            margin-top: 8px;
         }
         
         .selection-info {
@@ -502,6 +554,7 @@
             <div class="selection-info">
                 选择一个字母进行针对性练习，或直接开始游戏使用随机单词
             </div>
+            <div class="letter-mastery-info" id="letter-mastery-info"></div>
             <div class="current-user-bar" id="current-user-bar"></div>
         </div>
         <div class="controls">
