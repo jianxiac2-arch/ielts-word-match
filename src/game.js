@@ -177,9 +177,14 @@ class IELTSGame {
 
         let user = this.users.find(u => u.name === name);
         if (!user) {
-            // 本地最多保留3个档案，超出时淘汰最早创建的档案
-            const dropped = this.users.length >= 3 ? this.users[0] : null;
-            if (this.users.length >= 3) this.users.shift();
+            // 本地最多保留3个档案，满档时需用户二次确认后替换最早创建的档案
+            if (this.users.length >= 3) {
+                const dropped = this.users[0];
+                if (!confirm(`本地档案已达3个上限，新建「${name}」将替换最早的「${dropped.name}」档案。是否继续？`)) {
+                    return; // 用户取消，保留原档案
+                }
+                this.users.shift();
+            }
             user = {
                 name,
                 totalMatchedWords: 0,
@@ -189,9 +194,6 @@ class IELTSGame {
             };
             this.users.push(user);
             this.saveUsers();
-            if (dropped) {
-                error.textContent = `档案数量已达3个，最早的"${this.escapeHtml(dropped.name)}"档案已被替换`;
-            }
         }
 
         localStorage.setItem('currentUser', name);
@@ -484,31 +486,31 @@ class IELTSGame {
         
         let message = '';
         if (won) {
-            // 检查是否达到通关标准
-            if (this.matchedPairs >= 10) {
+            // 通关标准：配对成功数达到本局词对数（2D 全消除 / 3D 全配对才会调用 endGame(true)）
+            if (this.matchedPairs >= this.currentWords.length) {
                 // 通关成功
                 this.currentUser.levelsCompleted++;
                 this.currentLevel++;
-                message = `恭喜你通过第${this.currentLevel - 1}关！得分：${this.score}，您已经掌握了${this.currentUser.totalMatchedWords}个词汇`;
-                
+                message = `恭喜你通过第${this.currentLevel - 1}关！得分：${this.score}，已掌握${this.currentUser.masteredWords.length}个词汇`;
+
                 // 显示烟花特效
                 this.showFireworks();
-                
+
                 // 显示下一关卡按钮
                 document.getElementById('next-btn').style.display = 'inline-block';
-                
+
                 // 检查是否完全通关
                 if (this.currentLevel > this.totalLevels) {
                     message += '\n恭喜你完全通关！';
                     this.currentLevel = 1; // 重置关卡
                 }
             } else {
-                // 未达到通关标准
-                message = `时间到！得分：${this.score}，您已经掌握了${this.currentUser.totalMatchedWords}个词汇\n未达到通关标准（需要消除10对及以上词汇），请重新开始`;
+                // 防御分支：正常流程下 endGame(true) 仅在全部配对完成时调用，不会进入此分支
+                message = `本局结束！得分：${this.score}，已掌握${this.currentUser.masteredWords.length}个词汇`;
             }
         } else {
             // 时间到
-            message = `时间到！得分：${this.score}，您已经掌握了${this.currentUser.totalMatchedWords}个词汇`;
+            message = `时间到！得分：${this.score}，已掌握${this.currentUser.masteredWords.length}个词汇`;
         }
         
         document.getElementById('message').textContent = message;

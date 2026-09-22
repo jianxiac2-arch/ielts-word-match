@@ -292,6 +292,12 @@
             const usersJson = localStorage.getItem('ieltsGameUsers');
             return usersJson ? JSON.parse(usersJson) : [];
         }
+
+        // HTML 转义，防止用户名包含特殊字符导致 XSS
+        function escapeHtml(str) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+            return String(str).replace(/[&<>"']/g, s => map[s]);
+        }
         
         // 获取当前用户
         function getCurrentUser() {
@@ -308,20 +314,24 @@
         function displayUserInfo() {
             const user = getCurrentUser();
             const userInfoContainer = document.getElementById('user-info');
-            
+
             if (!user) {
                 userInfoContainer.innerHTML = '<div class="info-item"><span class="info-label">提示</span><span class="info-value">请先玩一次游戏以创建用户档案</span></div>';
                 return;
             }
-            
+
             userInfoContainer.innerHTML = `
                 <div class="info-item">
                     <span class="info-label">用户名</span>
-                    <span class="info-value">${user.name}</span>
+                    <span class="info-value">${escapeHtml(user.name)}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">已掌握词汇</span>
-                    <span class="info-value">${user.totalMatchedWords}个</span>
+                    <span class="info-value">${user.masteredWords.length}个</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">累计配对次数</span>
+                    <span class="info-value">${user.totalMatchedWords}次</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">已完成关卡</span>
@@ -333,9 +343,13 @@
                 </div>
                 <div class="info-item">
                     <span class="info-label">操作</span>
-                    <button class="clear-btn" onclick="clearUserData('${user.name}')">清除数据</button>
+                    <button class="clear-btn" data-user-name="${escapeHtml(user.name)}">清除数据</button>
                 </div>
             `;
+            // 绑定清除按钮事件（避免内联 onclick 导致的 XSS）
+            userInfoContainer.querySelector('.clear-btn').addEventListener('click', function() {
+                clearUserData(this.dataset.userName);
+            });
         }
         
         // 加载词汇库总词数
@@ -367,11 +381,11 @@
             }
             
             const totalWords = await getTotalWords();
-            const masteredWords = user.totalMatchedWords;
-            const percentage = Math.min((masteredWords / totalWords) * 100, 100);
-            
+            const masteredCount = user.masteredWords.length;
+            const percentage = Math.min((masteredCount / totalWords) * 100, 100);
+
             progressFill.style.width = `${percentage}%`;
-            progressText.textContent = `${masteredWords}/${totalWords}个词 (${Math.round(percentage)}%)`;
+            progressText.textContent = `${masteredCount}/${totalWords}个词 (${Math.round(percentage)}%)`;
         }
         
         // 显示分首字母进度
@@ -428,25 +442,31 @@
         function displayUsersList() {
             const users = loadUserData();
             const usersListContainer = document.getElementById('users-list');
-            
+
             if (users.length === 0) {
                 usersListContainer.innerHTML = '<div class="user-card">暂无用户</div>';
                 return;
             }
-            
+
             let usersHTML = '';
             users.forEach(user => {
                 usersHTML += `
                     <div class="user-card">
-                        <div class="user-name">${user.name}</div>
+                        <div class="user-name">${escapeHtml(user.name)}</div>
                         <div class="user-level">关卡：${user.levelsCompleted}</div>
-                        <div class="user-level">词汇：${user.totalMatchedWords}个</div>
-                        <button class="clear-btn" onclick="clearUserData('${user.name}')">清除数据</button>
+                        <div class="user-level">已掌握：${user.masteredWords.length}个</div>
+                        <button class="clear-btn" data-user-name="${escapeHtml(user.name)}">清除数据</button>
                     </div>
                 `;
             });
-            
+
             usersListContainer.innerHTML = usersHTML;
+            // 绑定清除按钮事件（避免内联 onclick 导致的 XSS）
+            usersListContainer.querySelectorAll('.clear-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    clearUserData(this.dataset.userName);
+                });
+            });
         }
         
         // 清除用户数据
