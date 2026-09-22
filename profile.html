@@ -231,6 +231,81 @@
             background-color: #e53e3e;
         }
         
+        /* ===== 词汇花园 ===== */
+        .garden-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #d6bcfa;
+            overflow: hidden;
+        }
+
+        .garden-stage {
+            position: relative;
+            min-height: 160px;
+            background: linear-gradient(180deg, #e8f5e9 0%, #f1e8d9 70%, #e8dcc8 100%);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .garden-emoji-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 6px;
+            margin-bottom: 12px;
+            min-height: 48px;
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .garden-emoji {
+            display: inline-block;
+            animation: garden-grow 0.5s ease-out;
+        }
+
+        @keyframes garden-grow {
+            0% { transform: scale(0); opacity: 0; }
+            60% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .garden-empty {
+            color: #8b7355;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .garden-info {
+            background-color: rgba(255,255,255,0.85);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e9d8fd;
+        }
+
+        .garden-stage-name {
+            font-weight: bold;
+            color: #6b46c1;
+            font-size: 15px;
+        }
+
+        .garden-next {
+            font-size: 12px;
+            color: #718096;
+            text-align: right;
+        }
+
+        .garden-next b {
+            color: #9f7aea;
+        }
+
         /* 响应式设计 */
         @media (max-width: 650px) {
             .profile-container {
@@ -252,6 +327,19 @@
             <h2>个人信息</h2>
             <div class="user-info" id="user-info">
                 <!-- 个人信息将通过JavaScript动态生成 -->
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>我的词汇花园</h2>
+            <div class="garden-card">
+                <div class="garden-stage" id="garden-stage">
+                    <!-- 花园内容将通过JavaScript动态生成 -->
+                </div>
+                <div class="garden-info">
+                    <span class="garden-stage-name" id="garden-stage-name">荒地</span>
+                    <span class="garden-next" id="garden-next">种下第一颗种子吧</span>
+                </div>
             </div>
         </div>
         
@@ -486,9 +574,63 @@
             }
         }
         
+        // 词汇花园阶梯配置（阈值、名称、emoji 组合、下一阶段提示）
+        const GARDEN_STAGES = [
+            { threshold: 0,   name: '荒地',       emojis: [],                                        next: '掌握 1 个词解锁萌芽' },
+            { threshold: 1,   name: '萌芽',       emojis: ['🌱'],                                    next: '掌握 10 词进入小花丛' },
+            { threshold: 10,  name: '小花丛',     emojis: ['🌸', '🌱'],                              next: '掌握 25 词进入小花园' },
+            { threshold: 25,  name: '小花园',     emojis: ['🌸', '🌳', '🌱'],                        next: '掌握 50 词进入繁盛花园' },
+            { threshold: 50,  name: '繁盛花园',   emojis: ['🌸', '🌳', '🦋', '🌱'],                  next: '掌握 100 词进入秘密花园' },
+            { threshold: 100, name: '秘密花园',   emojis: ['🌸', '🌳', '🐟', '🦋', '🌱'],            next: '掌握 200 词进入森林花园' },
+            { threshold: 200, name: '森林花园',   emojis: ['🌸', '🌳', '🐦', '🐟', '🦋', '🌱'],      next: '掌握 500 词成为词汇绿洲' },
+            { threshold: 500, name: '词汇绿洲',   emojis: ['🌈', '🌸', '🌳', '🐦', '🐟', '🦋', '🌱'], next: '🎉 你已达成词汇绿洲！' }
+        ];
+
+        // 渲染词汇花园
+        function renderGarden() {
+            const stageEl = document.getElementById('garden-stage');
+            const nameEl = document.getElementById('garden-stage-name');
+            const nextEl = document.getElementById('garden-next');
+            const user = getCurrentUser();
+
+            if (!user) {
+                stageEl.innerHTML = '<div class="garden-empty">先去玩一局游戏<br>种下第一颗种子吧 🌱</div>';
+                nameEl.textContent = '荒地';
+                nextEl.textContent = '';
+                return;
+            }
+
+            const count = user.masteredWords.length;
+            let stage = GARDEN_STAGES[0];
+            for (let i = GARDEN_STAGES.length - 1; i >= 0; i--) {
+                if (count >= GARDEN_STAGES[i].threshold) {
+                    stage = GARDEN_STAGES[i];
+                    break;
+                }
+            }
+
+            nameEl.textContent = stage.name;
+            nextEl.innerHTML = stage.next;
+
+            if (stage.emojis.length === 0) {
+                stageEl.innerHTML = '<div class="garden-empty">种下第一颗种子吧 🌱</div>';
+                return;
+            }
+
+            // emoji 数量随词数增长（基础 3 个，每 10 词 +1，上限 15 个），循环取阶梯内的 emoji 组合
+            const emojiCount = Math.min(3 + Math.floor(count / 10), 15);
+            let html = '<div class="garden-emoji-row">';
+            for (let i = 0; i < emojiCount; i++) {
+                html += `<span class="garden-emoji">${stage.emojis[i % stage.emojis.length]}</span>`;
+            }
+            html += '</div>';
+            stageEl.innerHTML = html;
+        }
+
         // 初始化页面
         async function init() {
             displayUserInfo();
+            renderGarden();
             await displayProgress();
             await displayLetterProgress();
             displayUsersList();
